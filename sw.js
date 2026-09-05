@@ -1,8 +1,8 @@
-const CACHE_NAME = 'dolar-al-dia-v8';
+const CACHE_NAME = 'dolar-al-dia-v9';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/app.js',
+  '/app.js?v=9',
   '/manifest.json',
   '/icon-32.png',
   '/icon-192.png',
@@ -45,7 +45,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((cachedResponse) => {
+      return cache.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
         const fetchPromise = fetch(event.request)
           .then((networkResponse) => {
             if (networkResponse && networkResponse.status === 200) {

@@ -265,40 +265,65 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev
 });
 
 // 9. Función para copiar resultado al portapapeles
-async function copyToClipboard(text) {
-  if (!text) return false;
+function fallbackCopyText(text) {
   try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch (err) {
-    // Continuar con el método de respaldo si la API Clipboard no está disponible
-  }
+    const mark = document.createElement('span');
+    mark.textContent = text;
+    mark.style.all = 'unset';
+    mark.style.position = 'fixed';
+    mark.style.top = '0';
+    mark.style.left = '0';
+    mark.style.clip = 'rect(0, 0, 0, 0)';
+    mark.style.whiteSpace = 'pre';
+    mark.style.webkitUserSelect = 'text';
+    mark.style.userSelect = 'text';
 
-  try {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+    document.body.appendChild(mark);
+
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNode(mark);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
     const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
+    selection.removeAllRanges();
+    document.body.removeChild(mark);
     return successful;
   } catch (err) {
-    console.error('Error al copiar al portapapeles:', err);
+    console.error('Error en fallback de copiado:', err);
     return false;
   }
+}
+
+async function copyToClipboard(text) {
+  if (!text) return false;
+
+  // 1. Intentar primero con la API nativa moderna
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.warn('API Clipboard no disponible o bloqueada, recurriendo a fallback:', err);
+    }
+  }
+
+  // 2. Método de respaldo (ideal para PWA móvil y navegadores WebKit/iOS/Android)
+  return fallbackCopyText(text);
 }
 
 function setupCopyButton(button, input) {
   if (!button || !input) return;
   let timeoutId = null;
 
-  button.addEventListener('click', async () => {
+  // Evitar desenfoque del input o parpadeo del teclado virtual al pulsar el botón en móviles
+  button.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+  });
+
+  const performCopy = async (e) => {
+    if (e) e.preventDefault();
     const val = input.value.trim();
     if (!val) return;
 
@@ -324,7 +349,9 @@ function setupCopyButton(button, input) {
         timeoutId = null;
       }, 1500);
     }
-  });
+  };
+
+  button.addEventListener('click', performCopy);
 }
 
 setupCopyButton(copyForeignBtn, foreignInput);

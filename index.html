@@ -277,6 +277,13 @@
       align-items: center;
       justify-content: center;
       transition: color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+      z-index: 2;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .copy-btn svg {
+      pointer-events: none;
     }
 
     .copy-btn:hover {
@@ -504,7 +511,7 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=9"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
