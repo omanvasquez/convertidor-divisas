@@ -39,6 +39,8 @@ const vesInput = document.getElementById('ves-input');
 const foreignLabel = document.getElementById('foreign-label');
 const foreignSymbol = document.getElementById('foreign-symbol');
 const timestampEl = document.getElementById('update-timestamp');
+const copyForeignBtn = document.getElementById('copy-foreign-btn');
+const copyVesBtn = document.getElementById('copy-ves-btn');
 
 // 3. Funciones de cálculo matemático
 function calculateFromForeign() {
@@ -261,3 +263,70 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (ev
     applyTheme(event.matches ? 'dark' : 'light');
   }
 });
+
+// 9. Función para copiar resultado al portapapeles
+async function copyToClipboard(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    // Continuar con el método de respaldo si la API Clipboard no está disponible
+  }
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    console.error('Error al copiar al portapapeles:', err);
+    return false;
+  }
+}
+
+function setupCopyButton(button, input) {
+  if (!button || !input) return;
+  let timeoutId = null;
+
+  button.addEventListener('click', async () => {
+    const val = input.value.trim();
+    if (!val) return;
+
+    const copied = await copyToClipboard(val);
+    if (copied) {
+      const copyIcon = button.querySelector('.copy-icon');
+      const checkIcon = button.querySelector('.check-icon');
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      button.classList.add('copied');
+      button.setAttribute('title', '¡Copiado!');
+      button.setAttribute('aria-label', '¡Copiado!');
+      if (copyIcon) copyIcon.style.display = 'none';
+      if (checkIcon) checkIcon.style.display = 'block';
+
+      timeoutId = setTimeout(() => {
+        button.classList.remove('copied');
+        button.setAttribute('title', 'Copiar monto');
+        button.setAttribute('aria-label', 'Copiar monto');
+        if (copyIcon) copyIcon.style.display = 'block';
+        if (checkIcon) checkIcon.style.display = 'none';
+        timeoutId = null;
+      }, 1500);
+    }
+  });
+}
+
+setupCopyButton(copyForeignBtn, foreignInput);
+setupCopyButton(copyVesBtn, vesInput);
+
